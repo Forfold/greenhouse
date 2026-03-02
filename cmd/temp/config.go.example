@@ -1,0 +1,7 @@
+package main
+
+const (
+    wifiSSID  = ""
+    wifiPass  = ""
+    serverURL = ""
+)
