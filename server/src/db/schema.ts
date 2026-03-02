@@ -1,13 +1,13 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { mysqlTable, int, double, varchar, bigint } from 'drizzle-orm/mysql-core'
 import { sql } from 'drizzle-orm'
 
-export const readings = sqliteTable('readings', {
-  id:         integer('id').primaryKey({ autoIncrement: true }),
-  board:      text('board').notNull(),
-  sensor:     text('sensor').notNull(),
-  tempF:      real('temp_f').notNull(),
-  humidity:   real('humidity').notNull(),
-  recordedAt: integer('recorded_at').notNull().default(sql`(unixepoch())`),
+export const readings = mysqlTable('readings', {
+  id:         int('id').primaryKey().autoincrement(),
+  board:      varchar('board', { length: 50 }).notNull(),
+  sensor:     varchar('sensor', { length: 50 }).notNull(),
+  tempF:      double('temp_f').notNull(),
+  humidity:   double('humidity').notNull(),
+  recordedAt: bigint('recorded_at', { mode: 'number' }).notNull().default(sql`(UNIX_TIMESTAMP())`),
 })
 
 export type Reading = typeof readings.$inferSelect

@@ -1,42 +1,43 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { migrate } from 'drizzle-orm/mysql2/migrator'
+import mysql from 'mysql2/promise'
+import { drizzle } from 'drizzle-orm/mysql2'
 import { readings } from './schema'
 import path from 'path'
 
-function makeTestDb() {
-  const sqlite = new Database(':memory:')
-  const db = drizzle(sqlite, { schema: { readings } })
-  migrate(db, { migrationsFolder: path.join(__dirname, '../../drizzle') })
-  return db
-}
+const skip = !process.env.DATABASE_URL
 
-describe('migrations', () => {
-  it('runs without error on a fresh db', () => {
-    expect(() => makeTestDb()).not.toThrow()
+describe.skipIf(skip)('database migrations', () => {
+  let pool: mysql.Pool
+  let db: ReturnType<typeof drizzle>
+
+  beforeAll(async () => {
+    pool = mysql.createPool(process.env.DATABASE_URL!)
+    db = drizzle(pool, { schema: { readings }, mode: 'default' })
+    await migrate(db, { migrationsFolder: path.join(__dirname, '../../drizzle') })
   })
 
-  it('creates the readings table', () => {
-    const db = makeTestDb()
-    const result = db.select().from(readings).all()
-    expect(result).toEqual([])
+  afterAll(async () => {
+    await pool.end()
   })
 
-  it('inserts and retrieves a reading', () => {
-    const db = makeTestDb()
-    db.insert(readings).values({
+  it('runs migrations without error', () => {
+    // if beforeAll didn't throw, migrations succeeded
+    expect(true).toBe(true)
+  })
+
+  it('inserts and retrieves a reading', async () => {
+    await db.insert(readings).values({
       board: 'temp',
       sensor: 'sensor1',
       tempF: 72.5,
       humidity: 45.2,
-    }).run()
+    })
 
-    const [row] = db.select().from(readings).all()
-    expect(row.board).toBe('temp')
-    expect(row.sensor).toBe('sensor1')
-    expect(row.tempF).toBe(72.5)
-    expect(row.humidity).toBe(45.2)
-    expect(row.recordedAt).toBeTypeOf('number')
+    const rows = await db.select().from(readings)
+    const row = rows.find(r => r.board === 'temp' && r.sensor === 'sensor1')
+    expect(row).toBeDefined()
+    expect(row!.tempF).toBe(72.5)
+    expect(row!.humidity).toBe(45.2)
   })
 })

@@ -39,4 +39,5 @@ claude_readme.md
 
 # Server
 server/node_modules/
+server/.env
 *.db
