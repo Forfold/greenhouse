@@ -2,4 +2,5 @@
 
 const char* WIFI_SSID  = "";
 const char* WIFI_PASS  = "";
-const char* SERVER_URL = "";  // e.g. https://mydomain.com/readings
+const char* SERVER_URL = "";  // e.g. https://yourapp.railway.app/readings
+const char* API_KEY    = "";  // must match API_KEY env var on the server

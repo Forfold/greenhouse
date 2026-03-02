@@ -24,6 +24,7 @@ void postReadings(float temp1, float hum1, float temp2, float hum2) {
   HTTPClient http;
   http.begin(SERVER_URL);
   http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-api-key", API_KEY);
 
   char body[128];
   snprintf(body, sizeof(body),
