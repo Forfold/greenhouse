@@ -1,8 +1,11 @@
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
-cmd/temp/config.go
-cmd/soil/config.go
+
+# Arduino
+arduino/temp/.pio/
+arduino/temp/include/config.h
+
 
 # Binaries for programs and plugins
 *.exe
@@ -36,6 +39,7 @@ go.work.sum
 
 # Agentic Coding
 claude_readme.md
+.claude
 
 # Server
 server/node_modules/
