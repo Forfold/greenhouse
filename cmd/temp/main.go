@@ -22,7 +22,7 @@ func main() {
 		if err != nil || err2 != nil {
 			println("sensor1 error")
 		} else {
-			fmt.Printf("sensor1: %.1fF  %.1f%%\n", temp, hum)
+			fmt.Printf("sensor1: %.1fF  %.1f%% humid \n", temp, hum)
 		}
 
 		temp, err = sensor2.TemperatureFloat(dht.F)
@@ -30,8 +30,10 @@ func main() {
 		if err != nil || err2 != nil {
 			println("sensor2 error")
 		} else {
-			fmt.Printf("sensor2: %.1fF  %.1f%%\n", temp, hum)
+			fmt.Printf("sensor2: %.1fF  %.1f%% humid\n", temp, hum)
 		}
+
+		fmt.Println("")
 
 		time.Sleep(2 * time.Second)
 	}
