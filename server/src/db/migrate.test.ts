@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { randomUUID } from 'crypto'
 import { migrate } from 'drizzle-orm/mysql2/migrator'
 import mysql from 'mysql2/promise'
 import { drizzle } from 'drizzle-orm/mysql2'
@@ -27,15 +28,17 @@ describe.skipIf(skip)('database migrations', () => {
   })
 
   it('inserts and retrieves a reading', async () => {
+    const id = randomUUID()
     await db.insert(readings).values({
-      board: 'temp',
+      id,
+      board: 'temperature',
       sensor: 'sensor1',
       tempF: 72.5,
       humidity: 45.2,
     })
 
     const rows = await db.select().from(readings)
-    const row = rows.find(r => r.board === 'temp' && r.sensor === 'sensor1')
+    const row = rows.find(r => r.id === id)
     expect(row).toBeDefined()
     expect(row!.tempF).toBe(72.5)
     expect(row!.humidity).toBe(45.2)

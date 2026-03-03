@@ -29,7 +29,7 @@ void postReadings(float temp1, float hum1, float temp2, float hum2) {
 
   char body[128];
   snprintf(body, sizeof(body),
-    "{\"board\":\"temp\",\"sensor1\":{\"tempF\":%.1f,\"humidity\":%.1f},\"sensor2\":{\"tempF\":%.1f,\"humidity\":%.1f}}",
+    "{\"board\":\"temperature\",\"sensor1\":{\"tempF\":%.1f,\"humidity\":%.1f},\"sensor2\":{\"tempF\":%.1f,\"humidity\":%.1f}}",
     temp1, hum1, temp2, hum2);
 
   int code = http.POST(body);

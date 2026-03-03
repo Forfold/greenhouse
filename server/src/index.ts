@@ -1,4 +1,5 @@
 import express from 'express'
+import { randomUUID } from 'crypto'
 import { db } from './db/index'
 import { runMigrations } from './db/migrate'
 import { readings } from './db/schema'
@@ -35,8 +36,8 @@ app.post('/readings', requireApiKey, async (req, res) => {
   }
 
   await db.transaction(async (tx) => {
-    await tx.insert(readings).values({ board, sensor: 'sensor1', tempF: sensor1.tempF, humidity: sensor1.humidity })
-    await tx.insert(readings).values({ board, sensor: 'sensor2', tempF: sensor2.tempF, humidity: sensor2.humidity })
+    await tx.insert(readings).values({ id: randomUUID(), board, sensor: 'sensor1', tempF: sensor1.tempF, humidity: sensor1.humidity })
+    await tx.insert(readings).values({ id: randomUUID(), board, sensor: 'sensor2', tempF: sensor2.tempF, humidity: sensor2.humidity })
   })
 
   res.json({ ok: true })
