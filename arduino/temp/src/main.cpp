@@ -8,21 +8,22 @@ DHTesp sensor1;
 DHTesp sensor2;
 
 void connectWiFi() {
-  Serial.print("Connecting to WiFi");
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED) {
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 40) {
     delay(500);
-    Serial.print(".");
-    if (WiFi.status() == WL_CONNECT_FAILED) {
-      Serial.println("Connection failed");
-    }
+    attempts++;
   }
-  Serial.println("\nConnected: " + WiFi.localIP().toString());
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi reconnected: " + WiFi.localIP().toString());
+  } else {
+    Serial.printf("WiFi reconnect failed, status=%d\n", WiFi.status());
+  }
 }
 
 void postReadings(float temp1, float hum1, float temp2, float hum2) {
   HTTPClient http;
-  http.begin(SERVER_URL);
+  http.begin(String(SERVER_URL) + "/readings");
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-api-key", API_KEY);
 
@@ -37,11 +38,12 @@ void postReadings(float temp1, float hum1, float temp2, float hum2) {
 }
 
 void setup() {
-  Serial.begin(115200); // number is baud rate (bits‑per‑second)
+  Serial.begin(115200);
   sensor1.setup(13, DHTesp::DHT22); // D13 on board
   sensor2.setup(4, DHTesp::DHT22); // D04 on board
   delay(2000);  // DHT22 needs >1s after power-up
-  connectWiFi();
+  Serial.printf("Connecting to %s\n", WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
 void loop() {
@@ -70,7 +72,10 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED) {
       connectWiFi();
     }
-    postReadings(temp1F, d1.humidity, temp2F, d2.humidity);
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("IP: " + WiFi.localIP().toString());
+      postReadings(temp1F, d1.humidity, temp2F, d2.humidity);
+    }
   }
 
   Serial.println();
