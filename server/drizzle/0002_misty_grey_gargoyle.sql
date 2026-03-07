@@ -1,4 +1,4 @@
-CREATE TABLE `config` (
+CREATE TABLE IF NOT EXISTS `config` (
 	`id` char(36) NOT NULL,
 	`reading_name` varchar(50) NOT NULL,
 	`default_unit` varchar(50) NOT NULL,
