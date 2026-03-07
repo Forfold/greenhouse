@@ -20,8 +20,8 @@ UPDATE `readings` SET
   `value` = `temp_f`,
   `unit` = 'fahrenheit';
 --> statement-breakpoint
-INSERT INTO `readings` (`id`, `config_id`, `sensor`, `value`, `unit`, `recorded_at`)
-SELECT UUID(), 'd5b8f9c3-2a4e-5b67-0f9d-3c8a7b0e4f21', `sensor`, `humidity`, 'percentage', `recorded_at`
+INSERT INTO `readings` (`id`, `config_id`, `sensor`, `value`, `unit`, `recorded_at`, `board`)
+SELECT UUID(), 'd5b8f9c3-2a4e-5b67-0f9d-3c8a7b0e4f21', `sensor`, `humidity`, 'percentage', `recorded_at`, `board`
 FROM `readings`
 WHERE `config_id` = 'c4a7e8b2-1f3d-4a56-9e8c-2b7f6a9d3e10';
 --> statement-breakpoint
