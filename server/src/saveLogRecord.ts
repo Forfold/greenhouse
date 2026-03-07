@@ -1,6 +1,8 @@
 import { db } from './db';
 import { readings } from './db/schema';
+import { SendExceedanceNotification } from './sendExceedanceNotification';
 
+// todo: manage this in DB?
 export const UNITS = [
   'liters',
   'milliliters',
@@ -16,9 +18,10 @@ export const UNITS = [
   'celsius'
 ];
 
+// 1000ms * 60s * 60m * 24h * 30d
 const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;
 
-type LogEntry = {
+export type LogEntry = {
   id: string;
   configID: string;
   sensor: string;
@@ -84,10 +87,9 @@ export class SaveLogRecord {
 
   // sends the exceedance notifications
   private async sendExceedanceNotifications() {
-    // TODO: implement this
-    // const sendExceedanceNotification = new SendExceedanceNotification(
-      // this.logEntry,
-    // );
-    // sendExceedanceNotification.execute();
+    const sendExceedanceNotification = new SendExceedanceNotification(
+      this.logEntry,
+    );
+    sendExceedanceNotification.execute();
   }
 }
