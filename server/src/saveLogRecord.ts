@@ -84,10 +84,10 @@ export class SaveLogRecord {
 
   // sends the exceedance notifications
   private async sendExceedanceNotifications() {
-    // @ts-expect-error - TODO: implement this
-    const sendExceedanceNotification = new SendExceedanceNotification(
-      this.logEntry,
-    );
-    sendExceedanceNotification.execute();
+    // TODO: implement this
+    // const sendExceedanceNotification = new SendExceedanceNotification(
+      // this.logEntry,
+    // );
+    // sendExceedanceNotification.execute();
   }
 }
