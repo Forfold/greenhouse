@@ -4,6 +4,7 @@ import { db } from './db/index'
 import { runMigrations } from './db/migrate'
 import { readings, config } from './db/schema'
 import { desc } from 'drizzle-orm'
+import { SaveLogRecord, ValidationError } from './saveLogRecord'
 
 const app = express()
 app.use(express.json())
@@ -24,16 +25,21 @@ function requireApiKey(req: express.Request, res: express.Response, next: expres
   next()
 }
 
-let tempConfigId: string
-let humidityConfigId: string
+type Config = Record<string, {
+  id: string;
+  readingName: string;
+  defaultUnit: string;
+}>
 
-async function loadConfig() {
+let appConfig: Config
+
+async function loadConfig(): Promise<Config> {
   const configs = await db.select().from(config)
   const temp = configs.find(c => c.readingName === 'temperature')
   const humidity = configs.find(c => c.readingName === 'humidity')
   if (!temp || !humidity) throw new Error('Missing config rows for temperature/humidity')
-  tempConfigId = temp.id
-  humidityConfigId = humidity.id
+
+  return { temperature: temp, humidity: humidity }
 }
 
 // POST /readings
@@ -41,22 +47,26 @@ async function loadConfig() {
 // Header: x-api-key: <API_KEY>
 app.post('/readings', requireApiKey, async (req, res) => {
   const { sensor1, sensor2 } = req.body
+  const now = new Date()
+  const entries = [
+    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor1', value: sensor1.tempF,    unit: 'fahrenheit', recordedAt: now },
+    { id: randomUUID(), configID: appConfig.humidity.id,    sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage',  recordedAt: now },
+    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor2', value: sensor2.tempF,    unit: 'fahrenheit', recordedAt: now },
+    { id: randomUUID(), configID: appConfig.humidity.id,    sensor: 'sensor2', value: sensor2.humidity, unit: 'percentage',  recordedAt: now },
+  ]
 
-  if (!sensor1 || !sensor2) {
-    res.status(400).json({ error: 'sensor name missing' })
-    return
+  try {
+    for (const entry of entries) {
+      await new SaveLogRecord(entry).execute()
+    }
+    res.json({ ok: true })
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      res.status(400).json({ error: err.message })
+    } else {
+      res.status(500).json({ error: 'internal server error' })
+    }
   }
-
-  await db.transaction(async (tx) => {
-    await tx.insert(readings).values([
-      { id: randomUUID(), configID: tempConfigId,     sensor: 'sensor1', value: sensor1.tempF,    unit: 'fahrenheit' },
-      { id: randomUUID(), configID: humidityConfigId, sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage' },
-      { id: randomUUID(), configID: tempConfigId,     sensor: 'sensor2', value: sensor2.tempF,    unit: 'fahrenheit' },
-      { id: randomUUID(), configID: humidityConfigId, sensor: 'sensor2', value: sensor2.humidity, unit: 'percentage' },
-    ])
-  })
-
-  res.json({ ok: true })
 })
 
 // GET /readings?limit=100
@@ -67,6 +77,7 @@ app.get('/readings', async (_req, res) => {
 
 runMigrations()
   .then(loadConfig)
+  .then(cfg => { appConfig = cfg })
   .then(() => {
     app.listen(PORT, () => {
       console.log(`greenhouse server running on :${PORT}`)
