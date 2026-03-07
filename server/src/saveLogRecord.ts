@@ -34,9 +34,9 @@ export class ValidationError extends Error {
 export class SaveLogRecord {
   constructor(private readonly logEntry: LogEntry) {}
 
-  async execute() {
+  async execute(tx?: any) {
     this.validateLogEntry();
-    await this.persistLogEntry(this.logEntry);
+    await this.persistLogEntry(this.logEntry, tx);
     await this.sendExceedanceNotifications();
   }
 
@@ -45,8 +45,8 @@ export class SaveLogRecord {
     if (!this.logEntry.sensor) {
       throw new ValidationError('Log entry sensor name is required');
     }
-    if (!this.logEntry.value) {
-      throw new ValidationError('Log entry value is required');
+    if (typeof this.logEntry.value !== 'number' || isNaN(this.logEntry.value)) {
+      throw new ValidationError('Log entry value must be a valid number');
     }
     if (!this.logEntry.unit) {
       throw new ValidationError('Log entry unit is required');
@@ -77,8 +77,9 @@ export class SaveLogRecord {
   }
 
   // persists the log entry
-  private async persistLogEntry(logEntry: LogEntry) {
-    await db.insert(readings).values(logEntry);
+  private async persistLogEntry(logEntry: LogEntry, tx?: any) {
+    const dbToUse = tx || db;
+    await dbToUse.insert(readings).values(logEntry);
   }
 
   // sends the exceedance notifications

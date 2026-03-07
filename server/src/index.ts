@@ -47,6 +47,16 @@ async function loadConfig(): Promise<Config> {
 // Header: x-api-key: <API_KEY>
 app.post('/readings', requireApiKey, async (req, res) => {
   const { sensor1, sensor2 } = req.body
+
+  // Validate input
+  if (!sensor1 || !sensor2) {
+    return res.status(400).json({ error: 'sensor1 and sensor2 are required' })
+  }
+  if (typeof sensor1.tempF !== 'number' || typeof sensor1.humidity !== 'number' ||
+      typeof sensor2.tempF !== 'number' || typeof sensor2.humidity !== 'number') {
+    return res.status(400).json({ error: 'tempF and humidity must be numbers' })
+  }
+
   const now = new Date()
   const entries = [
     { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor1', value: sensor1.tempF,    unit: 'fahrenheit', recordedAt: now },
@@ -56,14 +66,18 @@ app.post('/readings', requireApiKey, async (req, res) => {
   ]
 
   try {
-    for (const entry of entries) {
-      await new SaveLogRecord(entry).execute()
-    }
+    await db.transaction(async (tx) => {
+      for (const entry of entries) {
+        const recorder = new SaveLogRecord(entry)
+        await recorder.execute(tx)
+      }
+    })
     res.json({ ok: true })
   } catch (err) {
     if (err instanceof ValidationError) {
       res.status(400).json({ error: err.message })
     } else {
+      console.error('Database error:', err)
       res.status(500).json({ error: 'internal server error' })
     }
   }
