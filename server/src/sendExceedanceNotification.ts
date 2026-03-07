@@ -5,7 +5,7 @@ export class SendExceedanceNotification {
   constructor (private readonly logEntry: LogEntry) {}
 
   async execute () {
-    this.checkPeriod()
+    await this.checkPeriod()
   }
 
   private async checkPeriod () {
