@@ -3,7 +3,8 @@ import { randomUUID } from 'crypto'
 import { migrate } from 'drizzle-orm/mysql2/migrator'
 import mysql from 'mysql2/promise'
 import { drizzle } from 'drizzle-orm/mysql2'
-import { readings } from './schema'
+import { eq } from 'drizzle-orm'
+import { readings, config } from './schema'
 import path from 'path'
 
 const skip = !process.env.DATABASE_URL
@@ -14,7 +15,7 @@ describe.skipIf(skip)('database migrations', () => {
 
   beforeAll(async () => {
     pool = mysql.createPool(process.env.DATABASE_URL!)
-    db = drizzle(pool, { schema: { readings }, mode: 'default' })
+    db = drizzle(pool, { schema: { readings, config }, mode: 'default' })
     await migrate(db, { migrationsFolder: path.join(__dirname, '../../drizzle') })
   })
 
@@ -28,19 +29,45 @@ describe.skipIf(skip)('database migrations', () => {
   })
 
   it('inserts and retrieves a reading', async () => {
-    const id = randomUUID()
-    await db.insert(readings).values({
-      id,
-      board: 'temperature',
-      sensor: 'sensor1',
-      tempF: 72.5,
-      humidity: 45.2,
-    })
+    const configs = await db.select().from(config)
+    const tempConfig = configs.find(c => c.readingName === 'temperature')!
+    const humidityConfig = configs.find(c => c.readingName === 'humidity')!
 
-    const rows = await db.select().from(readings)
-    const row = rows.find(r => r.id === id)
-    expect(row).toBeDefined()
-    expect(row!.tempF).toBe(72.5)
-    expect(row!.humidity).toBe(45.2)
+    const tempId = randomUUID()
+    const humidityId = randomUUID()
+    const now = new Date()
+
+    await db.insert(readings).values([
+      {
+        id: tempId,
+        sensor: 'sensor1',
+        configID: tempConfig.id,
+        value: 72.5,
+        unit: 'fahrenheit',
+        recordedAt: now,
+      },
+      {
+        id: humidityId,
+        sensor: 'sensor1',
+        configID: humidityConfig.id,
+        value: 45.2,
+        unit: 'percentage',
+        recordedAt: now,
+      },
+    ])
+
+    const rows = await db.select().from(readings).where(eq(readings.sensor, 'sensor1'))
+    expect(rows).toHaveLength(2)
+
+    const tempRow = rows.find(r => r.id === tempId)
+    const humidityRow = rows.find(r => r.id === humidityId)
+
+    expect(tempRow).toBeDefined()
+    expect(tempRow!.value).toBe(72.5)
+    expect(tempRow!.unit).toBe('fahrenheit')
+
+    expect(humidityRow).toBeDefined()
+    expect(humidityRow!.value).toBe(45.2)
+    expect(humidityRow!.unit).toBe('percentage')
   })
 })
