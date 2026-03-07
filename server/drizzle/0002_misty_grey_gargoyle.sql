@@ -5,15 +5,15 @@ CREATE TABLE IF NOT EXISTS `config` (
 	CONSTRAINT `config_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-INSERT INTO `config` (`id`, `reading_name`, `default_unit`) VALUES
+INSERT IGNORE INTO `config` (`id`, `reading_name`, `default_unit`) VALUES
   ('c4a7e8b2-1f3d-4a56-9e8c-2b7f6a9d3e10', 'temperature', 'fahrenheit'),
   ('d5b8f9c3-2a4e-5b67-0f9d-3c8a7b0e4f21', 'humidity', 'percentage');
 --> statement-breakpoint
-ALTER TABLE `readings` ADD `config_id` char(36) NULL;
+ALTER TABLE `readings` ADD COLUMN IF NOT EXISTS `config_id` char(36) NULL;
 --> statement-breakpoint
-ALTER TABLE `readings` ADD `value` double NULL;
+ALTER TABLE `readings` ADD COLUMN IF NOT EXISTS `value` double NULL;
 --> statement-breakpoint
-ALTER TABLE `readings` ADD `unit` varchar(50) NULL;
+ALTER TABLE `readings` ADD COLUMN IF NOT EXISTS `unit` varchar(50) NULL;
 --> statement-breakpoint
 UPDATE `readings` SET
   `config_id` = 'c4a7e8b2-1f3d-4a56-9e8c-2b7f6a9d3e10',
