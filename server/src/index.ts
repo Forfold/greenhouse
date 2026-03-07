@@ -2,7 +2,7 @@ import express from 'express'
 import { randomUUID } from 'crypto'
 import { db } from './db/index'
 import { runMigrations } from './db/migrate'
-import { readings } from './db/schema'
+import { readings, config } from './db/schema'
 import { desc } from 'drizzle-orm'
 
 const app = express()
@@ -24,20 +24,36 @@ function requireApiKey(req: express.Request, res: express.Response, next: expres
   next()
 }
 
+let tempConfigId: string
+let humidityConfigId: string
+
+async function loadConfig() {
+  const configs = await db.select().from(config)
+  const temp = configs.find(c => c.readingName === 'temperature')
+  const humidity = configs.find(c => c.readingName === 'humidity')
+  if (!temp || !humidity) throw new Error('Missing config rows for temperature/humidity')
+  tempConfigId = temp.id
+  humidityConfigId = humidity.id
+}
+
 // POST /readings
-// Body: { board, sensor1: { tempF, humidity }, sensor2: { tempF, humidity } }
+// Body: { sensor1: { tempF, humidity }, sensor2: { tempF, humidity } }
 // Header: x-api-key: <API_KEY>
 app.post('/readings', requireApiKey, async (req, res) => {
-  const { board, sensor1, sensor2 } = req.body
+  const { sensor1, sensor2 } = req.body
 
-  if (!board || !sensor1 || !sensor2) {
-    res.status(400).json({ error: 'missing fields' })
+  if (!sensor1 || !sensor2) {
+    res.status(400).json({ error: 'sensor name missing' })
     return
   }
 
   await db.transaction(async (tx) => {
-    await tx.insert(readings).values({ id: randomUUID(), board, sensor: 'sensor1', tempF: sensor1.tempF, humidity: sensor1.humidity })
-    await tx.insert(readings).values({ id: randomUUID(), board, sensor: 'sensor2', tempF: sensor2.tempF, humidity: sensor2.humidity })
+    await tx.insert(readings).values([
+      { id: randomUUID(), configID: tempConfigId,     sensor: 'sensor1', value: sensor1.tempF,    unit: 'fahrenheit' },
+      { id: randomUUID(), configID: humidityConfigId, sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage' },
+      { id: randomUUID(), configID: tempConfigId,     sensor: 'sensor2', value: sensor2.tempF,    unit: 'fahrenheit' },
+      { id: randomUUID(), configID: humidityConfigId, sensor: 'sensor2', value: sensor2.humidity, unit: 'percentage' },
+    ])
   })
 
   res.json({ ok: true })
@@ -49,8 +65,10 @@ app.get('/readings', async (_req, res) => {
   res.json(rows)
 })
 
-runMigrations().then(() => {
-  app.listen(PORT, () => {
-    console.log(`greenhouse server running on :${PORT}`)
+runMigrations()
+  .then(loadConfig)
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`greenhouse server running on :${PORT}`)
+    })
   })
-})

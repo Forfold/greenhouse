@@ -27,6 +27,7 @@ void postReadings(float temp1, float hum1, float temp2, float hum2) {
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-api-key", API_KEY);
 
+  // todo: remove "board" data - no longer a col in db
   char body[128];
   snprintf(body, sizeof(body),
     "{\"board\":\"temperature\",\"sensor1\":{\"tempF\":%.1f,\"humidity\":%.1f},\"sensor2\":{\"tempF\":%.1f,\"humidity\":%.1f}}",
