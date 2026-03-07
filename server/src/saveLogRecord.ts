@@ -1,6 +1,6 @@
-import { db } from './db';
-import { readings } from './db/schema';
-import { SendExceedanceNotification } from './sendExceedanceNotification';
+import { db } from './db'
+import { readings } from './db/schema'
+import { SendExceedanceNotification } from './sendExceedanceNotification'
 
 // todo: manage this in DB?
 export const UNITS = [
@@ -16,10 +16,10 @@ export const UNITS = [
   'percentage',
   'fahrenheit',
   'celsius'
-];
+]
 
 // 1000ms * 60s * 60m * 24h * 30d
-const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;
+const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30
 
 export type LogEntry = {
   id: string;
@@ -28,46 +28,46 @@ export type LogEntry = {
   value: number;
   unit: string;
   recordedAt: Date;
-};
+}
 
 export class ValidationError extends Error {
-  readonly statusCode = 400;
+  readonly statusCode = 400
 }
 
 export class SaveLogRecord {
-  constructor(private readonly logEntry: LogEntry) {}
+  constructor (private readonly logEntry: LogEntry) {}
 
-  async execute(tx?: any) {
-    this.validateLogEntry();
-    await this.persistLogEntry(this.logEntry, tx);
-    await this.sendExceedanceNotifications();
+  async execute (tx?: any) {
+    this.validateLogEntry()
+    await this.persistLogEntry(this.logEntry, tx)
+    await this.sendExceedanceNotifications()
   }
 
   // validates the log entry
-  private validateLogEntry() {
+  private validateLogEntry () {
     if (!this.logEntry.sensor) {
-      throw new ValidationError('Log entry sensor name is required');
+      throw new ValidationError('Log entry sensor name is required')
     }
     if (typeof this.logEntry.value !== 'number' || isNaN(this.logEntry.value)) {
-      throw new ValidationError('Log entry value must be a valid number');
+      throw new ValidationError('Log entry value must be a valid number')
     }
     if (!this.logEntry.unit) {
-      throw new ValidationError('Log entry unit is required');
+      throw new ValidationError('Log entry unit is required')
     }
     if (!UNITS.includes(this.logEntry.unit)) {
-      throw new ValidationError('Log entry unit is not supported');
+      throw new ValidationError('Log entry unit is not supported')
     }
     if (!this.logEntry.recordedAt) {
-      throw new ValidationError('Log entry date is required');
+      throw new ValidationError('Log entry date is required')
     }
     if (this.logEntry.recordedAt.getTime() > Date.now()) {
-      throw new ValidationError('Log entry date is in the future');
+      throw new ValidationError('Log entry date is in the future')
     }
     if (
       this.logEntry.recordedAt.getTime() <
       Date.now() - THIRTY_DAYS_IN_MILLISECONDS
     ) {
-      throw new ValidationError('Log entry date is too old');
+      throw new ValidationError('Log entry date is too old')
     }
 
     // TODO: validate logEntry depending on unit
@@ -80,16 +80,16 @@ export class SaveLogRecord {
   }
 
   // persists the log entry
-  private async persistLogEntry(logEntry: LogEntry, tx?: any) {
-    const dbToUse = tx || db;
-    await dbToUse.insert(readings).values(logEntry);
+  private async persistLogEntry (logEntry: LogEntry, tx?: any) {
+    const dbToUse = tx || db
+    await dbToUse.insert(readings).values(logEntry)
   }
 
   // sends the exceedance notifications
-  private async sendExceedanceNotifications() {
+  private async sendExceedanceNotifications () {
     const sendExceedanceNotification = new SendExceedanceNotification(
-      this.logEntry,
-    );
-    sendExceedanceNotification.execute();
+      this.logEntry
+    )
+    sendExceedanceNotification.execute()
   }
 }

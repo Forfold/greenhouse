@@ -17,7 +17,7 @@ if (!API_KEY) {
   process.exit(1)
 }
 
-function requireApiKey(req: express.Request, res: express.Response, next: express.NextFunction) {
+function requireApiKey (req: express.Request, res: express.Response, next: express.NextFunction) {
   if (req.headers['x-api-key'] !== API_KEY) {
     res.status(401).json({ error: 'unauthorized' })
     return
@@ -33,13 +33,13 @@ type Config = Record<string, {
 
 let appConfig: Config
 
-async function loadConfig(): Promise<Config> {
+async function loadConfig (): Promise<Config> {
   const configs = await db.select().from(config)
   const temp = configs.find(c => c.readingName === 'temperature')
   const humidity = configs.find(c => c.readingName === 'humidity')
   if (!temp || !humidity) throw new Error('Missing config rows for temperature/humidity')
 
-  return { temperature: temp, humidity: humidity }
+  return { temperature: temp, humidity }
 }
 
 // POST /readings
@@ -59,10 +59,10 @@ app.post('/readings', requireApiKey, async (req, res) => {
 
   const now = new Date()
   const entries = [
-    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor1', value: sensor1.tempF,    unit: 'fahrenheit', recordedAt: now },
-    { id: randomUUID(), configID: appConfig.humidity.id,    sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage',  recordedAt: now },
-    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor2', value: sensor2.tempF,    unit: 'fahrenheit', recordedAt: now },
-    { id: randomUUID(), configID: appConfig.humidity.id,    sensor: 'sensor2', value: sensor2.humidity, unit: 'percentage',  recordedAt: now },
+    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor1', value: sensor1.tempF, unit: 'fahrenheit', recordedAt: now },
+    { id: randomUUID(), configID: appConfig.humidity.id, sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage', recordedAt: now },
+    { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor2', value: sensor2.tempF, unit: 'fahrenheit', recordedAt: now },
+    { id: randomUUID(), configID: appConfig.humidity.id, sensor: 'sensor2', value: sensor2.humidity, unit: 'percentage', recordedAt: now },
   ]
 
   try {

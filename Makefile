@@ -4,7 +4,7 @@ SERVER_URL ?= http://localhost:3000
 API_KEY    ?= $(shell grep -E '^API_KEY=' server/.env | cut -d= -f2-)
 COUNT      ?= 1
 
-.PHONY: flash-temp flash-soil monitor limit update-limit help
+.PHONY: flash-temp flash-soil monitor limit update-limit format-server help
 
 flash-temp:
 	~/.platformio/penv/bin/pio run -t upload -d arduino/temp
@@ -28,9 +28,13 @@ update-limit:
 	  -d '$(BODY)' \
 	  | jq .
 
+format-server:
+	cd server && npm run lint -- --fix && cd ..
+
 help:
 	@echo "Usage:"
 	@echo "  make flash-temp                      Compile and flash the temp/humidity board (PlatformIO)"
 	@echo "  make monitor                         Open serial monitor (115200 baud)"
 	@echo "  make limit CONFIG_ID=<uuid> VALUE=99 UNIT=fahrenheit PERIOD=hour TYPE=threshold DIRECTION=above"
 	@echo "  make update-limit ID=<uuid> BODY='{\"limitValue\":105}'"
+	@echo "  make format-server                   Auto-fix ESLint issues in server/src"

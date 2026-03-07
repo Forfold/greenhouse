@@ -1,26 +1,25 @@
-import { LogEntry } from './saveLogRecord';
+import { LogEntry } from './saveLogRecord'
 
 export class SendExceedanceNotification {
-  constructor(private readonly logEntry: LogEntry) {
+  constructor (private readonly logEntry: LogEntry) {
 
   }
 
-  async execute() {
+  async execute () {
     this.checkPeriod()
   }
 
-  private async checkPeriod() {
+  private async checkPeriod () {
     const l = this.logEntry
-    
+
     // todo: call db limits table, getting limit info for current log
-    // todo: check log value against limit condition
-    // todo: if period fails condition, send notification
-    if (false) {
+    // todo: check log value against limit condition    // todo: if period fails condition, send notification
+    if (!l.configID) {
       this.sendNotification()
     }
   }
 
-  private async sendNotification() {
+  private async sendNotification () {
 
   }
 }
