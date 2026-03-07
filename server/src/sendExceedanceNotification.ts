@@ -12,9 +12,9 @@ export class SendExceedanceNotification {
   private async checkPeriod() {
     const l = this.logEntry
     
-    // call db limits table
-
-    // todo: if period exceeds range or threshold, send notification
+    // todo: call db limits table, getting limit info for current log
+    // todo: check log value against limit condition
+    // todo: if period fails condition, send notification
     if (false) {
       this.sendNotification()
     }

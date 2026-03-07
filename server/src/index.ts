@@ -2,8 +2,8 @@ import express from 'express'
 import { randomUUID } from 'crypto'
 import { db } from './db/index'
 import { runMigrations } from './db/migrate'
-import { readings, config } from './db/schema'
-import { desc } from 'drizzle-orm'
+import { readings, config, limits, NewLimit } from './db/schema'
+import { desc, eq } from 'drizzle-orm'
 import { SaveLogRecord, ValidationError } from './saveLogRecord'
 
 const app = express()
@@ -80,6 +80,58 @@ app.post('/readings', requireApiKey, async (req, res) => {
       console.error('Database error:', err)
       res.status(500).json({ error: 'internal server error' })
     }
+  }
+})
+
+// POST /limits
+// Body: { configID, limitValue, limitUnit, period, periodCount?, type, direction }
+const VALID_PERIODS = ['minute', 'hour', 'day', 'month', 'year'] as const
+const VALID_TYPES = ['threshold', 'rate'] as const
+const VALID_DIRECTIONS = ['above', 'below', 'increase', 'decrease'] as const
+
+app.post('/limits', requireApiKey, async (req, res) => {
+  const { configID, limitValue, limitUnit, period, periodCount, type, direction } = req.body
+
+  if (!configID || typeof limitValue !== 'number' || !limitUnit || !period || !type || !direction) {
+    return res.status(400).json({ error: 'configID, limitValue, limitUnit, period, type, and direction are required' })
+  }
+  if (!VALID_PERIODS.includes(period)) return res.status(400).json({ error: `period must be one of: ${VALID_PERIODS.join(', ')}` })
+  if (!VALID_TYPES.includes(type)) return res.status(400).json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` })
+  if (!VALID_DIRECTIONS.includes(direction)) return res.status(400).json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` })
+
+  // todo: validate threshold with above/below and rate with increase/decrease
+
+  try {
+    const id = randomUUID()
+    await db.insert(limits).values({ id, configID, limitValue, limitUnit, period, periodCount: periodCount ?? 1, type, direction })
+    res.status(201).json({ id })
+  } catch (err) {
+    console.error('Database error:', err)
+    res.status(500).json({ error: 'internal server error' })
+  }
+})
+
+// PATCH /limits/:id
+// Body: any subset of { limitValue, limitUnit, period, periodCount, type, direction }
+app.patch('/limits/:id', requireApiKey, async (req, res) => {
+  const update: Partial<NewLimit> = {}
+  if (req.body.limitValue !== undefined) update.limitValue = req.body.limitValue
+  if (req.body.limitUnit !== undefined) update.limitUnit = req.body.limitUnit
+  if (req.body.period !== undefined) update.period = req.body.period
+  if (req.body.periodCount !== undefined) update.periodCount = req.body.periodCount
+  if (req.body.type !== undefined) update.type = req.body.type
+  if (req.body.direction !== undefined) update.direction = req.body.direction
+
+  if (Object.keys(update).length === 0) {
+    return res.status(400).json({ error: 'no fields to update' })
+  }
+
+  try {
+    await db.update(limits).set(update).where(eq(limits.id, req.params.id))
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Database error:', err)
+    res.status(500).json({ error: 'internal server error' })
   }
 })
 
