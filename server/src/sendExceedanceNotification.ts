@@ -13,6 +13,9 @@ export class SendExceedanceNotification {
   private async checkPeriod () {
     const l = this.logEntry
 
+    // todo: update limit_window for current log entry
+    //   question: where is the best place to do this? here? make a limit checking class?
+
     // todo: call db limits table, getting limit info for current log
     // todo: check log value against limit condition    // todo: if period fails condition, send notification
     if (!l.configID) {
