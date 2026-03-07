@@ -1,6 +1,6 @@
 PORT       := /dev/cu.SLAB_USBtoUART
 BAUD       := 115200
-SERVER_URL ?= http://localhost:3000
+SERVER_URL ?= https://greenhouse-production-c6f4.up.railway.app
 API_KEY    ?= $(shell grep -E '^API_KEY=' server/.env | cut -d= -f2-)
 COUNT      ?= 1
 
