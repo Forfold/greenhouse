@@ -266,7 +266,8 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
         .status(400)
         .json({ error: 'rate limits must use increase or decrease direction' });
 
-    await db.update(limits).set(update).where(eq(limits.id, req.params.id));
+    const [result] = await db.update(limits).set(update).where(eq(limits.id, req.params.id));
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'limit not found' });
     res.json({ ok: true });
   } catch (err) {
     console.error('Database error:', err);
