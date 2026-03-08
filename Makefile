@@ -4,7 +4,7 @@ SERVER_URL ?= https://greenhouse-production-c6f4.up.railway.app
 API_KEY    ?= $(shell grep -E '^API_KEY=' server/.env | cut -d= -f2-)
 COUNT      ?= 1
 
-.PHONY: flash-temp flash-soil monitor limit update-limit format-server help
+.PHONY: flash-temp monitor limit update-limit format-server help
 
 flash-temp:
 	~/.platformio/penv/bin/pio run -t upload -d arduino/temp
