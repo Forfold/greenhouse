@@ -7,7 +7,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "lint": "biome check src",
-    "format": "biome format --write src",
+    "format": "biome check --write src",
     "test": "vitest"
   },
   "dependencies": {

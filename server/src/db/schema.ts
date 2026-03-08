@@ -1,14 +1,14 @@
-import {
-  mysqlTable,
-  char,
-  double,
-  varchar,
-  datetime,
-  mysqlEnum,
-  int,
-  uniqueIndex,
-} from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
+import {
+  char,
+  datetime,
+  double,
+  int,
+  mysqlEnum,
+  mysqlTable,
+  uniqueIndex,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 
 export const unitEnum = [
   'liters',

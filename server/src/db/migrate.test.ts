@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'crypto';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/mysql2';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import mysql from 'mysql2/promise';
-import { drizzle } from 'drizzle-orm/mysql2';
-import { eq } from 'drizzle-orm';
-import { readings, config } from './schema';
 import path from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { config, readings } from './schema';
 
 const skip = !process.env.DATABASE_URL;
 

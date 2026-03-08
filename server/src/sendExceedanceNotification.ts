@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { LimitManager } from './limitManager';
-import { LogEntry } from './saveLogRecord';
+import type { LogEntry } from './saveLogRecord';
 
 export class SendExceedanceNotification {
   constructor(private readonly logEntry: LogEntry) {}

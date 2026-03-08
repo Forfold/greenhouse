@@ -1,10 +1,10 @@
-import express from 'express';
 import { randomUUID } from 'crypto';
+import { desc, eq } from 'drizzle-orm';
+import express from 'express';
 import { db } from './db/index';
 import { runMigrations } from './db/migrate';
-import { readings, config, limits, NewLimit, unitEnum } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
-import { SaveLogRecord, ValidationError, LogEntry } from './saveLogRecord';
+import { config, limits, type NewLimit, readings, unitEnum } from './db/schema';
+import { type LogEntry, SaveLogRecord, ValidationError } from './saveLogRecord';
 
 const app = express();
 app.use(express.json());
@@ -141,12 +141,10 @@ app.post('/limits', requireApiKey, async (req, res) => {
     !type ||
     !direction
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          'configID, limitValue, limitUnit, period, type, and direction are required',
-      });
+    return res.status(400).json({
+      error:
+        'configID, limitValue, limitUnit, period, type, and direction are required',
+    });
   }
   if (!unitEnum.includes(limitUnit))
     return res
@@ -169,18 +167,16 @@ app.post('/limits', requireApiKey, async (req, res) => {
 
   try {
     const id = randomUUID();
-    await db
-      .insert(limits)
-      .values({
-        id,
-        configID,
-        limitValue,
-        limitUnit,
-        period,
-        periodCount: periodCount ?? 1,
-        type,
-        direction,
-      });
+    await db.insert(limits).values({
+      id,
+      configID,
+      limitValue,
+      limitUnit,
+      period,
+      periodCount: periodCount ?? 1,
+      type,
+      direction,
+    });
     res.status(201).json({ id });
   } catch (err) {
     console.error('Database error:', err);

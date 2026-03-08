@@ -1,5 +1,5 @@
-import { Limit, LimitWindow } from './db/schema';
-import { LogEntry } from './saveLogRecord';
+import type { Limit, LimitWindow } from './db/schema';
+import type { LogEntry } from './saveLogRecord';
 
 // note: might not need all the params in the current stubs, remove as needed
 export class LimitManager {
