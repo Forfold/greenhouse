@@ -15,6 +15,7 @@ export class LimitStore {
   }
 
   async getLimitWindowsForLimits(limitIDs: string[]): Promise<LimitWindow[]> {
+    if (limitIDs.length === 0) return [];
     return db
       .select()
       .from(limitWindows)
