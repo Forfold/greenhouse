@@ -1,4 +1,3 @@
-import type { MySql2Database } from 'drizzle-orm/mysql2';
 import { db } from './db';
 import { readings, unitEnum } from './db/schema';
 import { SendExceedanceNotification } from './sendExceedanceNotification';
@@ -22,7 +21,7 @@ export class ValidationError extends Error {
 export class SaveLogRecord {
   constructor(private readonly logEntry: LogEntry) {}
 
-  async execute(tx?: MySql2Database) {
+  async execute(tx?: typeof db) {
     this.validateLogEntry();
     await this.persistLogEntry(this.logEntry, tx);
     await this.sendExceedanceNotifications();
@@ -68,7 +67,7 @@ export class SaveLogRecord {
   }
 
   // persists the log entry
-  private async persistLogEntry(logEntry: LogEntry, tx?: MySql2Database) {
+  private async persistLogEntry(logEntry: LogEntry, tx?: typeof db) {
     const dbToUse = tx || db;
     await dbToUse.insert(readings).values(logEntry);
   }
