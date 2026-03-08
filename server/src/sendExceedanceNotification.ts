@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import type { Limit } from './db/schema';
 import { LimitManager } from './limitManager';
 import type { LogEntry } from './saveLogRecord';
 
@@ -25,15 +26,15 @@ export class SendExceedanceNotification {
     for (const limit of limits) {
       const window = await lm.ensureLimitWindow(limit, windowsByLimitID[limit.id]);
 
-      const ok = await lm.checkLogWithinLimitAndWindow(limit, window);
-      if (!ok) {
-        // this.sendNotification();
+      const exceeded = await lm.checkLogWithinLimitAndWindow(limit, window);
+      if (exceeded) {
+        await lm.updateLimitWindow(limit, window);
+        await this.sendNotification(limit);
       }
     }
   }
 
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: <stub>
-  private async sendNotification() {
+  private async sendNotification(limit: Limit) {
     const email = process.env.EMAIL;
     if (!email) {
       throw new Error('EMAIL not set in environment');
@@ -44,14 +45,32 @@ export class SendExceedanceNotification {
       throw new Error('RESEND_API_KEY not set in environment');
     }
 
+    const log = this.logEntry;
+    const directionLabel =
+      limit.direction === 'above' || limit.direction === 'increase'
+        ? 'exceeded'
+        : 'dropped below';
+
+    const subject = `Greenhouse Alert: ${log.sensor} ${directionLabel} ${limit.limitValue} ${limit.limitUnit}`;
+    const html = `
+      <h2>Greenhouse Limit Alert</h2>
+      <p>Sensor <strong>${log.sensor}</strong> has ${directionLabel} its configured limit.</p>
+      <table>
+        <tr><td><strong>Sensor</strong></td><td>${log.sensor}</td></tr>
+        <tr><td><strong>Reading</strong></td><td>${log.value} ${log.unit}</td></tr>
+        <tr><td><strong>Limit</strong></td><td>${limit.limitValue} ${limit.limitUnit}</td></tr>
+        <tr><td><strong>Limit type</strong></td><td>${limit.type} (${limit.direction})</td></tr>
+        <tr><td><strong>Period</strong></td><td>${limit.periodCount} ${limit.period}(s)</td></tr>
+        <tr><td><strong>Recorded at</strong></td><td>${log.recordedAt.toISOString()}</td></tr>
+      </table>
+    `;
+
     const resend: Resend = new Resend(resendKey);
-    resend.emails.send({
+    await resend.emails.send({
       from: 'alerts@forfold.com',
       to: email,
-      // todo: subject is limit exceeded string
-      subject: 'Hello World',
-      // todo: include subject string + log entry info
-      html: '<p>Congrats on sending your <strong>first email</strong>!</p>',
+      subject,
+      html,
     });
   }
 }
