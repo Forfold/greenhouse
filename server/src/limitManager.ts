@@ -73,6 +73,11 @@ export class LimitManager {
     return this.store.getLimitsForConfig(this.log.configID);
   }
 
+  async ensureLimitWindow(limit: Limit, window: LimitWindow | undefined): Promise<LimitWindow> {
+    if (window) return window;
+    return this.store.createLimitWindow(limit.id, this.log.recordedAt);
+  }
+
   // checkLogWithinLimitAndWindow returns true if the log value violates the limit
   // within the current window (and the window has not already been triggered).
   async checkLogWithinLimitAndWindow(

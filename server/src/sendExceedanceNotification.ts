@@ -23,7 +23,7 @@ export class SendExceedanceNotification {
     );
 
     for (const limit of limits) {
-      const window = windowsByLimitID[limit.id];
+      const window = await lm.ensureLimitWindow(limit, windowsByLimitID[limit.id]);
 
       const ok = await lm.checkLogWithinLimitAndWindow(limit, window);
       if (!ok) {
