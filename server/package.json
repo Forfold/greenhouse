@@ -14,6 +14,7 @@
     "drizzle-orm": "^0.30.10",
     "express": "^4.18.2",
     "mysql2": "^3.9.4",
+    "resend": "^6.9.3",
     "tsx": "^4.7.0"
   },
   "devDependencies": {
