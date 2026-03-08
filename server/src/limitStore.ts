@@ -50,8 +50,20 @@ export class LimitStore {
 		periodStart: Date,
 	): Promise<LimitWindow> {
 		const id = randomUUID();
-		await db.insert(limitWindows).values({ id, limitID: limitId, periodStart });
-		return { id, limitID: limitId, periodStart, triggeredAt: null };
+		try {
+			await db.insert(limitWindows).values({ id, limitID: limitId, periodStart });
+			return { id, limitID: limitId, periodStart, triggeredAt: null };
+		} catch (e) {
+			if (e instanceof Error && 'errno' in e && (e as NodeJS.ErrnoException).errno === 1062) {
+				// Race condition: another request created the window first
+				const [existing] = await db
+					.select()
+					.from(limitWindows)
+					.where(eq(limitWindows.limitID, limitId));
+				if (existing) return existing;
+			}
+			throw e;
+		}
 	}
 
 	async rollWindowToNewPeriod(windowId: string, periodStart: Date) {
