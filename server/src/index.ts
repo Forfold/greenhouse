@@ -2,9 +2,9 @@ import express from 'express'
 import { randomUUID } from 'crypto'
 import { db } from './db/index'
 import { runMigrations } from './db/migrate'
-import { readings, config, limits, NewLimit } from './db/schema'
+import { readings, config, limits, NewLimit, unitEnum } from './db/schema'
 import { desc, eq } from 'drizzle-orm'
-import { SaveLogRecord, ValidationError } from './saveLogRecord'
+import { SaveLogRecord, ValidationError, LogEntry } from './saveLogRecord'
 
 const app = express()
 app.use(express.json())
@@ -28,7 +28,7 @@ function requireApiKey (req: express.Request, res: express.Response, next: expre
 type Config = Record<string, {
   id: string;
   readingName: string;
-  defaultUnit: string;
+  defaultUnit: LogEntry['unit'];
 }>
 
 let appConfig: Config
@@ -58,7 +58,7 @@ app.post('/readings', requireApiKey, async (req, res) => {
   }
 
   const now = new Date()
-  const entries = [
+  const entries: LogEntry[] = [
     { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor1', value: sensor1.tempF, unit: 'fahrenheit', recordedAt: now },
     { id: randomUUID(), configID: appConfig.humidity.id, sensor: 'sensor1', value: sensor1.humidity, unit: 'percentage', recordedAt: now },
     { id: randomUUID(), configID: appConfig.temperature.id, sensor: 'sensor2', value: sensor2.tempF, unit: 'fahrenheit', recordedAt: now },
@@ -95,6 +95,7 @@ app.post('/limits', requireApiKey, async (req, res) => {
   if (!configID || typeof limitValue !== 'number' || !limitUnit || !period || !type || !direction) {
     return res.status(400).json({ error: 'configID, limitValue, limitUnit, period, type, and direction are required' })
   }
+  if (!unitEnum.includes(limitUnit)) return res.status(400).json({ error: `limitUnit must be one of: ${unitEnum.join(', ')}` })
   if (!VALID_PERIODS.includes(period)) return res.status(400).json({ error: `period must be one of: ${VALID_PERIODS.join(', ')}` })
   if (!VALID_TYPES.includes(type)) return res.status(400).json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` })
   if (!VALID_DIRECTIONS.includes(direction)) return res.status(400).json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` })
@@ -116,7 +117,10 @@ app.post('/limits', requireApiKey, async (req, res) => {
 app.patch('/limits/:id', requireApiKey, async (req, res) => {
   const update: Partial<NewLimit> = {}
   if (req.body.limitValue !== undefined) update.limitValue = req.body.limitValue
-  if (req.body.limitUnit !== undefined) update.limitUnit = req.body.limitUnit
+  if (req.body.limitUnit !== undefined) {
+    if (!unitEnum.includes(req.body.limitUnit)) return res.status(400).json({ error: `limitUnit must be one of: ${unitEnum.join(', ')}` })
+    update.limitUnit = req.body.limitUnit
+  }
   if (req.body.period !== undefined) update.period = req.body.period
   if (req.body.periodCount !== undefined) update.periodCount = req.body.periodCount
   if (req.body.type !== undefined) update.type = req.body.type
