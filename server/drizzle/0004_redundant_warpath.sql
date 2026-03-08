@@ -1,0 +1,3 @@
+ALTER TABLE `config` MODIFY COLUMN `default_unit` enum('liters','milliliters','gallons','quarts','pints','cups','fluid ounces','tablespoons','teaspoons','percentage','fahrenheit','celsius') NOT NULL;--> statement-breakpoint
+ALTER TABLE `limits` MODIFY COLUMN `limit_unit` enum('liters','milliliters','gallons','quarts','pints','cups','fluid ounces','tablespoons','teaspoons','percentage','fahrenheit','celsius') NOT NULL;--> statement-breakpoint
+ALTER TABLE `readings` MODIFY COLUMN `unit` enum('liters','milliliters','gallons','quarts','pints','cups','fluid ounces','tablespoons','teaspoons','percentage','fahrenheit','celsius') NOT NULL;

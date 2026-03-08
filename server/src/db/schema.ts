@@ -1,10 +1,26 @@
 import { mysqlTable, char, double, varchar, datetime, mysqlEnum, int, uniqueIndex } from 'drizzle-orm/mysql-core'
 import { sql } from 'drizzle-orm'
 
+export const unitEnum = [
+  'liters',
+  'milliliters',
+  'gallons',
+  'quarts',
+  'pints',
+  'cups',
+  'fluid ounces',
+  'tablespoons',
+  'teaspoons',
+  'percentage',
+  'fahrenheit',
+  'celsius',
+] as const
+export type Unit = typeof unitEnum[number]
+
 export const config = mysqlTable('config', {
   id: char('id', { length: 36 }).primaryKey(),
   readingName: varchar('reading_name', { length: 50 }).notNull(),
-  defaultUnit: varchar('default_unit', { length: 50 }).notNull(),
+  defaultUnit: mysqlEnum('default_unit', unitEnum).notNull(),
 })
 
 export type Config = typeof config.$inferSelect
@@ -15,7 +31,7 @@ export const readings = mysqlTable('readings', {
   sensor: varchar('sensor', { length: 50 }).notNull(),
   configID: char('config_id', { length: 36 }).references(() => config.id).notNull(),
   value: double('value').notNull(),
-  unit: varchar('unit', { length: 50 }).notNull(),
+  unit: mysqlEnum('unit', unitEnum).notNull(),
   recordedAt: datetime('recorded_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 })
 
@@ -26,7 +42,7 @@ export const limits = mysqlTable('limits', {
   id: char('id', { length: 36 }).primaryKey(),
   configID: char('config_id', { length: 36 }).references(() => config.id).notNull(),
   limitValue: double('limit_value').notNull(),
-  limitUnit: varchar('limit_unit', { length: 50 }).notNull(),
+  limitUnit: mysqlEnum('limit_unit', unitEnum).notNull(),
   period: mysqlEnum('period', ['minute', 'hour', 'day', 'month', 'year']).notNull(),
   periodCount: int('period_count').notNull().default(1),
 

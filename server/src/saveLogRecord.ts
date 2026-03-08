@@ -1,22 +1,6 @@
 import { db } from './db'
-import { readings } from './db/schema'
+import { readings, unitEnum } from './db/schema'
 import { SendExceedanceNotification } from './sendExceedanceNotification'
-
-// todo: manage this in DB?
-export const UNITS = [
-  'liters',
-  'milliliters',
-  'gallons',
-  'quarts',
-  'pints',
-  'cups',
-  'fluid ounces',
-  'tablespoons',
-  'teaspoons',
-  'percentage',
-  'fahrenheit',
-  'celsius'
-]
 
 // 1000ms * 60s * 60m * 24h * 30d
 const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30
@@ -26,7 +10,7 @@ export type LogEntry = {
   configID: string;
   sensor: string;
   value: number;
-  unit: string;
+  unit: typeof unitEnum[number];
   recordedAt: Date;
 }
 
@@ -54,7 +38,7 @@ export class SaveLogRecord {
     if (!this.logEntry.unit) {
       throw new ValidationError('Log entry unit is required')
     }
-    if (!UNITS.includes(this.logEntry.unit)) {
+    if (!unitEnum.includes(this.logEntry.unit)) {
       throw new ValidationError('Log entry unit is not supported')
     }
     if (!this.logEntry.recordedAt) {
