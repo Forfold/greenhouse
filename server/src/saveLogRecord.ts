@@ -1,9 +1,7 @@
 import { db } from './db';
 import { readings, unitEnum } from './db/schema';
 import { SendExceedanceNotification } from './sendExceedanceNotification';
-
-// 1000ms * 60s * 60m * 24h * 30d
-const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;
+import { THIRTY_DAYS_IN_MILLISECONDS } from './utils';
 
 export type LogEntry = {
   id: string;
@@ -61,6 +59,11 @@ export class SaveLogRecord {
     }
 
     // TODO: validate logEntry depending on unit
+    // allow any value if unit/typing is correct
+    // or an error such as exceeding double size
+
+    // let notification system handle high values
+
     // if (this.logEntry.value > 500) {
     //   throw new ValidationError('Log entry value is way too high');
     // }

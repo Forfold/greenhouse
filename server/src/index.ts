@@ -138,7 +138,8 @@ app.post('/limits', requireApiKey, async (req, res) => {
 
   if (
     !configID ||
-    typeof limitValue !== 'number' || !Number.isFinite(limitValue) ||
+    typeof limitValue !== 'number' ||
+    !Number.isFinite(limitValue) ||
     !limitUnit ||
     !period ||
     !type ||
@@ -166,7 +167,10 @@ app.post('/limits', requireApiKey, async (req, res) => {
       .status(400)
       .json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` });
 
-  if (periodCount !== undefined && (!Number.isInteger(periodCount) || periodCount < 1))
+  if (
+    periodCount !== undefined &&
+    (!Number.isInteger(periodCount) || periodCount < 1)
+  )
     return res.status(400).json({ error: 'periodCount must be a positive integer' });
 
   if (type === 'threshold' && (direction === 'increase' || direction === 'decrease'))
@@ -209,7 +213,10 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
     update.limitUnit = req.body.limitUnit;
   }
   if (req.body.limitValue !== undefined) {
-    if (typeof req.body.limitValue !== 'number' || !Number.isFinite(req.body.limitValue))
+    if (
+      typeof req.body.limitValue !== 'number' ||
+      !Number.isFinite(req.body.limitValue)
+    )
       return res.status(400).json({ error: 'limitValue must be a finite number' });
     update.limitValue = req.body.limitValue;
   }
@@ -222,7 +229,9 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
   }
   if (req.body.periodCount !== undefined) {
     if (!Number.isInteger(req.body.periodCount) || req.body.periodCount < 1)
-      return res.status(400).json({ error: 'periodCount must be a positive integer' });
+      return res
+        .status(400)
+        .json({ error: 'periodCount must be a positive integer' });
     update.periodCount = req.body.periodCount;
   }
   if (req.body.type !== undefined) {
@@ -273,8 +282,12 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
         .status(400)
         .json({ error: 'rate limits must use increase or decrease direction' });
 
-    const [result] = await db.update(limits).set(update).where(eq(limits.id, req.params.id));
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'limit not found' });
+    const [result] = await db
+      .update(limits)
+      .set(update)
+      .where(eq(limits.id, req.params.id));
+    if (result.affectedRows === 0)
+      return res.status(404).json({ error: 'limit not found' });
     res.json({ ok: true });
   } catch (err) {
     console.error('Database error:', err);
