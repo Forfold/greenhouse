@@ -233,28 +233,39 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
     update.direction = req.body.direction;
   }
 
-  if (update.type !== undefined && update.direction !== undefined) {
-    if (
-      update.type === 'threshold' &&
-      (update.direction === 'increase' || update.direction === 'decrease')
-    )
-      return res
-        .status(400)
-        .json({ error: 'threshold limits must use above or below direction' });
-    if (
-      update.type === 'rate' &&
-      (update.direction === 'above' || update.direction === 'below')
-    )
-      return res
-        .status(400)
-        .json({ error: 'rate limits must use increase or decrease direction' });
-  }
-
   if (Object.keys(update).length === 0) {
     return res.status(400).json({ error: 'no fields to update' });
   }
 
   try {
+    // When only one of type/direction is being changed, fetch the existing row
+    // so we can validate the final (merged) type+direction combination.
+    let effectiveType = update.type;
+    let effectiveDirection = update.direction;
+    if (effectiveType === undefined || effectiveDirection === undefined) {
+      const [existing] = await db
+        .select()
+        .from(limits)
+        .where(eq(limits.id, req.params.id));
+      if (!existing) return res.status(404).json({ error: 'limit not found' });
+      effectiveType ??= existing.type;
+      effectiveDirection ??= existing.direction;
+    }
+    if (
+      effectiveType === 'threshold' &&
+      (effectiveDirection === 'increase' || effectiveDirection === 'decrease')
+    )
+      return res
+        .status(400)
+        .json({ error: 'threshold limits must use above or below direction' });
+    if (
+      effectiveType === 'rate' &&
+      (effectiveDirection === 'above' || effectiveDirection === 'below')
+    )
+      return res
+        .status(400)
+        .json({ error: 'rate limits must use increase or decrease direction' });
+
     await db.update(limits).set(update).where(eq(limits.id, req.params.id));
     res.json({ ok: true });
   } catch (err) {
