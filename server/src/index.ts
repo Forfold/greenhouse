@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { desc, eq } from 'drizzle-orm';
 import express from 'express';
 import { db } from './db/index';

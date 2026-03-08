@@ -1,9 +1,9 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
 import mysql from 'mysql2/promise';
-import path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { config, readings } from './schema';
 
@@ -14,7 +14,9 @@ describe.skipIf(skip)('database migrations', () => {
   let db: ReturnType<typeof drizzle>;
 
   beforeAll(async () => {
-    pool = mysql.createPool(process.env.DATABASE_URL!);
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL is not set');
+    pool = mysql.createPool(url);
     db = drizzle(pool, { schema: { readings, config }, mode: 'default' });
     await migrate(db, { migrationsFolder: path.join(__dirname, '../../drizzle') });
   });
@@ -30,8 +32,9 @@ describe.skipIf(skip)('database migrations', () => {
 
   it('inserts and retrieves a reading', async () => {
     const configs = await db.select().from(config);
-    const tempConfig = configs.find((c) => c.readingName === 'temperature')!;
-    const humidityConfig = configs.find((c) => c.readingName === 'humidity')!;
+    const tempConfig = configs.find((c) => c.readingName === 'temperature');
+    const humidityConfig = configs.find((c) => c.readingName === 'humidity');
+    if (!tempConfig || !humidityConfig) throw new Error('Seed config missing');
 
     const tempId = randomUUID();
     const humidityId = randomUUID();
@@ -65,12 +68,12 @@ describe.skipIf(skip)('database migrations', () => {
     const tempRow = rows.find((r) => r.id === tempId);
     const humidityRow = rows.find((r) => r.id === humidityId);
 
-    expect(tempRow).toBeDefined();
-    expect(tempRow!.value).toBe(72.5);
-    expect(tempRow!.unit).toBe('fahrenheit');
+    if (!tempRow || !humidityRow) throw new Error('Inserted rows not found');
 
-    expect(humidityRow).toBeDefined();
-    expect(humidityRow!.value).toBe(45.2);
-    expect(humidityRow!.unit).toBe('percentage');
+    expect(tempRow.value).toBe(72.5);
+    expect(tempRow.unit).toBe('fahrenheit');
+
+    expect(humidityRow.value).toBe(45.2);
+    expect(humidityRow.unit).toBe('percentage');
   });
 });

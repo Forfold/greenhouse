@@ -10,13 +10,25 @@ export class SendExceedanceNotification {
   }
 
   private async checkPeriod() {
-    const l = this.logEntry;
-    const lm = new LimitManager(l);
-    const lim = await lm.getLimit(l);
-    const lw = await lm.getLimitWindow(l, lim);
+    const log = this.logEntry;
+    const lm = new LimitManager(log);
 
-    if (await lm.checkLogLimitAndWindow(l, lim, lw)) {
-      this.sendNotification();
+    // a log could have more than 1 limit associated with it
+    // e.g. yearly quota and up to daily alert for same unit
+    const limits = await lm.getLimitsForLog();
+    const limitWindows = await lm.getLimitWindowsForLogLimits(limits);
+
+    const windowsByLimitID = Object.fromEntries(
+      limitWindows.map((w) => [w.limitID, w]),
+    );
+
+    for (const limit of limits) {
+      const window = windowsByLimitID[limit.id];
+
+      const ok = await lm.checkLogWithinLimitAndWindow(limit, window);
+      if (!ok) {
+        this.sendNotification();
+      }
     }
   }
 

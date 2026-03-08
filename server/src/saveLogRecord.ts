@@ -1,3 +1,4 @@
+import type { MySql2Database } from 'drizzle-orm/mysql2';
 import { db } from './db';
 import { readings, unitEnum } from './db/schema';
 import { SendExceedanceNotification } from './sendExceedanceNotification';
@@ -21,7 +22,7 @@ export class ValidationError extends Error {
 export class SaveLogRecord {
   constructor(private readonly logEntry: LogEntry) {}
 
-  async execute(tx?: any) {
+  async execute(tx?: MySql2Database) {
     this.validateLogEntry();
     await this.persistLogEntry(this.logEntry, tx);
     await this.sendExceedanceNotifications();
@@ -32,7 +33,10 @@ export class SaveLogRecord {
     if (!this.logEntry.sensor) {
       throw new ValidationError('Log entry sensor name is required');
     }
-    if (typeof this.logEntry.value !== 'number' || isNaN(this.logEntry.value)) {
+    if (
+      typeof this.logEntry.value !== 'number' ||
+      Number.isNaN(this.logEntry.value)
+    ) {
       throw new ValidationError('Log entry value must be a valid number');
     }
     if (!this.logEntry.unit) {
@@ -64,7 +68,7 @@ export class SaveLogRecord {
   }
 
   // persists the log entry
-  private async persistLogEntry(logEntry: LogEntry, tx?: any) {
+  private async persistLogEntry(logEntry: LogEntry, tx?: MySql2Database) {
     const dbToUse = tx || db;
     await dbToUse.insert(readings).values(logEntry);
   }
