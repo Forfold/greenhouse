@@ -28,8 +28,12 @@ update-limit:
 	  -d '$(BODY)' \
 	  | jq .
 
-format-server:
-	cd server && npm run lint -- --fix && cd ..
+format-server: ## Run from anywhere — switches to server dir if needed
+	@if [ "$$(basename $$PWD)" = "server" ]; then \
+		npm run format; \
+	else \
+		cd server && npm run format; \
+	fi
 
 help:
 	@echo "Usage:"
@@ -37,4 +41,4 @@ help:
 	@echo "  make monitor                         Open serial monitor (115200 baud)"
 	@echo "  make limit CONFIG_ID=<uuid> VALUE=99 UNIT=fahrenheit PERIOD=hour TYPE=threshold DIRECTION=above"
 	@echo "  make update-limit ID=<uuid> BODY='{\"limitValue\":105}'"
-	@echo "  make format-server                   Auto-fix ESLint issues in server/src"
+	@echo "  make format-server                   Auto-format server/src with Biome"
