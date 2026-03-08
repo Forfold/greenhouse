@@ -1,14 +1,6 @@
-import { and, asc, eq, gte, inArray, lte, ne } from 'drizzle-orm';
 import { DateTime } from 'luxon';
-import { db } from './db';
-import {
-  type Limit,
-  type LimitWindow,
-  limits,
-  limitWindows,
-  readings,
-  type Unit,
-} from './db/schema';
+import type { Limit, LimitWindow, Unit } from './db/schema';
+import { LimitStore } from './limitStore';
 import type { LogEntry } from './saveLogRecord';
 
 // Convert a temperature value to Celsius for comparison
@@ -68,46 +60,17 @@ function windowEndDate(
 }
 
 export class LimitManager {
+  private readonly store = new LimitStore();
+
   constructor(private readonly log: LogEntry) {}
   // todo: need function to cleanup old limit_windows
 
   async getLimitWindowsForLogLimits(lims: Limit[]): Promise<LimitWindow[]> {
-    const rows = await db
-      .select()
-      .from(limitWindows)
-      .where(
-        inArray(
-          limitWindows.limitID,
-          lims.map((l) => l.id),
-        ),
-      );
-    return rows;
+    return this.store.getLimitWindowsForLimits(lims.map((l) => l.id));
   }
 
   async getLimitsForLog(): Promise<Limit[]> {
-    const rows: Limit[] = await db
-      .select()
-      .from(limits)
-      .where(eq(limits.configID, this.log.configID));
-    return rows;
-  }
-
-  private async getWindowStartReading(window: LimitWindow) {
-    const [startReading] = await db
-      .select()
-      .from(readings)
-      .where(
-        and(
-          eq(readings.configID, this.log.configID),
-          eq(readings.sensor, this.log.sensor),
-          gte(readings.recordedAt, window.periodStart),
-          lte(readings.recordedAt, this.log.recordedAt),
-          ne(readings.id, this.log.id),
-        ),
-      )
-      .orderBy(asc(readings.recordedAt))
-      .limit(1);
-    return startReading;
+    return this.store.getLimitsForConfig(this.log.configID);
   }
 
   // checkLogWithinLimitAndWindow returns true if the log value violates the limit
@@ -136,7 +99,13 @@ export class LimitManager {
 
     if (limit.type === 'rate') {
       // Find the earliest reading in this window (excluding current log) to compute delta
-      const startReading = await this.getWindowStartReading(window);
+      const startReading = await this.store.getFirstReadingInWindow(
+        this.log.configID,
+        this.log.sensor,
+        window.periodStart,
+        this.log.recordedAt,
+        this.log.id,
+      );
       if (!startReading) return false;
 
       const startValue = toComparable(startReading.value, startReading.unit);
@@ -158,16 +127,10 @@ export class LimitManager {
 
     if (this.log.recordedAt > windowEnd) {
       // Window expired, roll to a new period starting at current log time
-      await db
-        .update(limitWindows)
-        .set({ periodStart: this.log.recordedAt, triggeredAt: null })
-        .where(eq(limitWindows.id, window.id));
+      await this.store.rollWindowToNewPeriod(window.id, this.log.recordedAt);
     } else if (!window.triggeredAt) {
       // Mark the exceedance in the current window
-      await db
-        .update(limitWindows)
-        .set({ triggeredAt: this.log.recordedAt })
-        .where(eq(limitWindows.id, window.id));
+      await this.store.markWindowTriggered(window.id, this.log.recordedAt);
     }
   }
 }
