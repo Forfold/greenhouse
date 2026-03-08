@@ -166,6 +166,9 @@ app.post('/limits', requireApiKey, async (req, res) => {
       .status(400)
       .json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` });
 
+  if (periodCount !== undefined && (!Number.isInteger(periodCount) || periodCount < 1))
+    return res.status(400).json({ error: 'periodCount must be a positive integer' });
+
   if (type === 'threshold' && (direction === 'increase' || direction === 'decrease'))
     return res
       .status(400)
@@ -217,7 +220,11 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
         .json({ error: `period must be one of: ${VALID_PERIODS.join(', ')}` });
     update.period = req.body.period;
   }
-  if (req.body.periodCount !== undefined) update.periodCount = req.body.periodCount;
+  if (req.body.periodCount !== undefined) {
+    if (!Number.isInteger(req.body.periodCount) || req.body.periodCount < 1)
+      return res.status(400).json({ error: 'periodCount must be a positive integer' });
+    update.periodCount = req.body.periodCount;
+  }
   if (req.body.type !== undefined) {
     if (!VALID_TYPES.includes(req.body.type))
       return res
