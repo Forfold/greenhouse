@@ -138,7 +138,7 @@ app.post('/limits', requireApiKey, async (req, res) => {
 
   if (
     !configID ||
-    typeof limitValue !== 'number' ||
+    typeof limitValue !== 'number' || !Number.isFinite(limitValue) ||
     !limitUnit ||
     !period ||
     !type ||
@@ -209,8 +209,8 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
     update.limitUnit = req.body.limitUnit;
   }
   if (req.body.limitValue !== undefined) {
-    if (typeof req.body.limitValue !== 'number')
-      return res.status(400).json({ error: 'limitValue must be a number' });
+    if (typeof req.body.limitValue !== 'number' || !Number.isFinite(req.body.limitValue))
+      return res.status(400).json({ error: 'limitValue must be a finite number' });
     update.limitValue = req.body.limitValue;
   }
   if (req.body.period !== undefined) {
