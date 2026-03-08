@@ -24,6 +24,9 @@ export class SaveLogRecord {
   async execute(tx?: typeof db) {
     this.validateLogEntry();
     await this.persistLogEntry(this.logEntry, tx);
+  }
+
+  async sendNotifications() {
     await this.sendExceedanceNotifications();
   }
 
@@ -75,6 +78,6 @@ export class SaveLogRecord {
   // sends the exceedance notifications
   private async sendExceedanceNotifications() {
     const sendExceedanceNotification = new SendExceedanceNotification(this.logEntry);
-    sendExceedanceNotification.execute();
+    await sendExceedanceNotification.execute();
   }
 }

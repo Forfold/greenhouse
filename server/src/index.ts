@@ -106,12 +106,15 @@ app.post('/readings', requireApiKey, async (req, res) => {
   ];
 
   try {
+    const recorders = entries.map((entry) => new SaveLogRecord(entry));
     await db.transaction(async (tx) => {
-      for (const entry of entries) {
-        const recorder = new SaveLogRecord(entry);
+      for (const recorder of recorders) {
         await recorder.execute(tx);
       }
     });
+    for (const recorder of recorders) {
+      await recorder.sendNotifications();
+    }
     res.json({ ok: true });
   } catch (err) {
     if (err instanceof ValidationError) {
@@ -163,7 +166,14 @@ app.post('/limits', requireApiKey, async (req, res) => {
       .status(400)
       .json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` });
 
-  // todo: validate threshold with above/below and rate with increase/decrease
+  if (type === 'threshold' && (direction === 'increase' || direction === 'decrease'))
+    return res
+      .status(400)
+      .json({ error: 'threshold limits must use above or below direction' });
+  if (type === 'rate' && (direction === 'above' || direction === 'below'))
+    return res
+      .status(400)
+      .json({ error: 'rate limits must use increase or decrease direction' });
 
   try {
     const id = randomUUID();
@@ -188,7 +198,6 @@ app.post('/limits', requireApiKey, async (req, res) => {
 // Body: any subset of { limitValue, limitUnit, period, periodCount, type, direction }
 app.patch('/limits/:id', requireApiKey, async (req, res) => {
   const update: Partial<NewLimit> = {};
-  if (req.body.limitValue !== undefined) update.limitValue = req.body.limitValue;
   if (req.body.limitUnit !== undefined) {
     if (!unitEnum.includes(req.body.limitUnit))
       return res
@@ -196,10 +205,50 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
         .json({ error: `limitUnit must be one of: ${unitEnum.join(', ')}` });
     update.limitUnit = req.body.limitUnit;
   }
-  if (req.body.period !== undefined) update.period = req.body.period;
+  if (req.body.limitValue !== undefined) {
+    if (typeof req.body.limitValue !== 'number')
+      return res.status(400).json({ error: 'limitValue must be a number' });
+    update.limitValue = req.body.limitValue;
+  }
+  if (req.body.period !== undefined) {
+    if (!VALID_PERIODS.includes(req.body.period))
+      return res
+        .status(400)
+        .json({ error: `period must be one of: ${VALID_PERIODS.join(', ')}` });
+    update.period = req.body.period;
+  }
   if (req.body.periodCount !== undefined) update.periodCount = req.body.periodCount;
-  if (req.body.type !== undefined) update.type = req.body.type;
-  if (req.body.direction !== undefined) update.direction = req.body.direction;
+  if (req.body.type !== undefined) {
+    if (!VALID_TYPES.includes(req.body.type))
+      return res
+        .status(400)
+        .json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` });
+    update.type = req.body.type;
+  }
+  if (req.body.direction !== undefined) {
+    if (!VALID_DIRECTIONS.includes(req.body.direction))
+      return res
+        .status(400)
+        .json({ error: `direction must be one of: ${VALID_DIRECTIONS.join(', ')}` });
+    update.direction = req.body.direction;
+  }
+
+  if (update.type !== undefined && update.direction !== undefined) {
+    if (
+      update.type === 'threshold' &&
+      (update.direction === 'increase' || update.direction === 'decrease')
+    )
+      return res
+        .status(400)
+        .json({ error: 'threshold limits must use above or below direction' });
+    if (
+      update.type === 'rate' &&
+      (update.direction === 'above' || update.direction === 'below')
+    )
+      return res
+        .status(400)
+        .json({ error: 'rate limits must use increase or decrease direction' });
+  }
 
   if (Object.keys(update).length === 0) {
     return res.status(400).json({ error: 'no fields to update' });
@@ -233,4 +282,8 @@ runMigrations()
     app.listen(PORT, () => {
       console.log(`greenhouse server running on :${PORT}`);
     });
+  })
+  .catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
