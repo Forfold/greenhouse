@@ -41,6 +41,15 @@ function toComparable(value: number, unit: Unit): number {
   return toCanonicalVolume(value, unit);
 }
 
+// Convert a delta (difference) value to canonical units for comparison.
+// Temperature deltas must not apply the offset used for absolute conversion:
+// a 10°F change = (10 * 5/9)°C ≈ 5.56°C, not ((10 - 32) * 5/9) = -12.22°C.
+// Volume and percentage conversions are pure scale factors, so toComparable works for both.
+function toDeltaComparable(value: number, unit: Unit): number {
+  if (unit === 'fahrenheit') return (value * 5) / 9;
+  return toComparable(value, unit);
+}
+
 const periodToDurationKey: Record<Limit['period'], string> = {
   minute: 'minutes',
   hour: 'hours',
@@ -98,9 +107,9 @@ export class LimitManager {
     if (this.log.recordedAt >= windowEnd) return false;
 
     const logValue = toComparable(this.log.value, this.log.unit);
-    const limitValue = toComparable(limit.limitValue, limit.limitUnit);
 
     if (limit.type === 'threshold') {
+      const limitValue = toComparable(limit.limitValue, limit.limitUnit);
       if (limit.direction === 'above') return logValue > limitValue;
       if (limit.direction === 'below') return logValue < limitValue;
     }
@@ -118,6 +127,7 @@ export class LimitManager {
 
       const startValue = toComparable(startReading.value, startReading.unit);
       const delta = logValue - startValue;
+      const limitValue = toDeltaComparable(limit.limitValue, limit.limitUnit);
 
       if (limit.direction === 'increase') return delta > limitValue;
       if (limit.direction === 'decrease') return delta < -limitValue;
