@@ -24,11 +24,12 @@ export class SendExceedanceNotification {
     );
 
     for (const limit of limits) {
-      const window = await lm.ensureLimitWindow(limit, windowsByLimitID[limit.id]);
+      let window = await lm.ensureLimitWindow(limit, windowsByLimitID[limit.id]);
+      window = await lm.advanceWindowIfExpired(limit, window);
 
       const exceeded = await lm.checkLogWithinLimitAndWindow(limit, window);
       if (exceeded) {
-        await lm.updateLimitWindow(limit, window);
+        await lm.markWindowTriggered(window);
         await this.sendNotification(limit);
       }
     }

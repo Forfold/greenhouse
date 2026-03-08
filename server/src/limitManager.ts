@@ -73,7 +73,10 @@ export class LimitManager {
     return this.store.getLimitsForConfig(this.log.configID);
   }
 
-  async ensureLimitWindow(limit: Limit, window: LimitWindow | undefined): Promise<LimitWindow> {
+  async ensureLimitWindow(
+    limit: Limit,
+    window: LimitWindow | undefined,
+  ): Promise<LimitWindow> {
     if (window) return window;
     return this.store.createLimitWindow(limit.id, this.log.recordedAt);
   }
@@ -92,7 +95,7 @@ export class LimitManager {
       limit.period,
       limit.periodCount,
     );
-    if (this.log.recordedAt > windowEnd) return false;
+    if (this.log.recordedAt >= windowEnd) return false;
 
     const logValue = toComparable(this.log.value, this.log.unit);
     const limitValue = toComparable(limit.limitValue, limit.limitUnit);
@@ -123,19 +126,25 @@ export class LimitManager {
     return false;
   }
 
-  async updateLimitWindow(limit: Limit, window: LimitWindow) {
+  // advanceWindowIfExpired rolls the window to the current period if it has expired,
+  // and returns the (possibly updated) window. Always call this before checking limits.
+  async advanceWindowIfExpired(
+    limit: Limit,
+    window: LimitWindow,
+  ): Promise<LimitWindow> {
     const windowEnd = windowEndDate(
       window.periodStart,
       limit.period,
       limit.periodCount,
     );
-
-    if (this.log.recordedAt > windowEnd) {
-      // Window expired, roll to a new period starting at current log time
+    if (this.log.recordedAt >= windowEnd) {
       await this.store.rollWindowToNewPeriod(window.id, this.log.recordedAt);
-    } else if (!window.triggeredAt) {
-      // Mark the exceedance in the current window
-      await this.store.markWindowTriggered(window.id, this.log.recordedAt);
+      return { ...window, periodStart: this.log.recordedAt, triggeredAt: null };
     }
+    return window;
+  }
+
+  async markWindowTriggered(window: LimitWindow) {
+    await this.store.markWindowTriggered(window.id, this.log.recordedAt);
   }
 }
