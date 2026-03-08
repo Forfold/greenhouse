@@ -275,12 +275,13 @@ app.patch('/limits/:id', requireApiKey, async (req, res) => {
 });
 
 // GET /readings?limit=100
-app.get('/readings', async (_req, res) => {
+app.get('/readings', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit as string, 10) || 100, 1000);
   const rows = await db
     .select()
     .from(readings)
     .orderBy(desc(readings.recordedAt))
-    .limit(100);
+    .limit(limit);
   res.json(rows);
 });
 
