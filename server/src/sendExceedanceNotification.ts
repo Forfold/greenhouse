@@ -29,8 +29,8 @@ export class SendExceedanceNotification {
 
       const exceeded = await lm.checkLogWithinLimitAndWindow(limit, window);
       if (exceeded) {
-        await lm.markWindowTriggered(window);
         await this.sendNotification(limit);
+        await lm.markWindowTriggered(window);
       }
     }
   }
