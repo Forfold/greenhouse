@@ -5,6 +5,8 @@ import type { LogEntry } from "./saveLogRecord";
 
 export class SendExceedanceNotification {
 	constructor(private readonly logEntry: LogEntry) {}
+	// todo: add business logic for taking the average of n sensors for log value
+	// using multiple logs at the same relevative timestamp
 
 	async execute() {
 		await this.checkLogForNotify();
