@@ -56,17 +56,8 @@ async function loadConfig(): Promise<Config> {
 app.post('/readings', requireApiKey, async (req, res) => {
   const { sensor1, sensor2 } = req.body;
 
-  // Validate input
   if (!sensor1 || !sensor2) {
     return res.status(400).json({ error: 'sensor1 and sensor2 are required' });
-  }
-  if (
-    typeof sensor1.tempF !== 'number' ||
-    typeof sensor1.humidity !== 'number' ||
-    typeof sensor2.tempF !== 'number' ||
-    typeof sensor2.humidity !== 'number'
-  ) {
-    return res.status(400).json({ error: 'tempF and humidity must be numbers' });
   }
 
   const now = new Date();
