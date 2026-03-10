@@ -71,6 +71,7 @@ export class SendExceedanceNotification {
       </table>
     `;
 
+		// todo: add retry logic - log failures to notify
 		const resend: Resend = new Resend(resendKey);
 		await resend.emails.send({
 			from: "alerts@forfold.com",
